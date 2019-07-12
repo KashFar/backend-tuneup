@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Tuneup assignment"""
 
-__author__ = "???"
+__author__ = "Kash Farhadi"
 
 import cProfile
 import pstats
@@ -12,15 +12,21 @@ import functools
 
 def profile(func):
     """A function that can be used as a decorator to measure performance"""
-    # You need to understand how decorators are constructed and used.
-    # Be sure to review the lesson material on decorators, they are used
-    # extensively in Django and Flask.
-    raise NotImplementedError("Complete this decorator function")
+    def inner(*args, **kwargs):
+        pr = cProfile.Profile()
+        pr.enable()
+        result = func(*args, **kwargs)
+        pr.disable()
+        sortby = 'cumulative'
+        ps = pstats.Stats(pr).sort_stats(sortby)
+        ps.print_stats(10)
+        return result
+    return inner
 
 
 def read_movies(src):
     """Returns a list of movie titles"""
-    print('Reading file: {}'.format(src))
+    print(f'Reading file: {src}')
     with open(src, 'r') as f:
         return f.read().splitlines()
 
@@ -32,24 +38,40 @@ def is_duplicate(title, movies):
             return True
     return False
 
-# @profile
 def find_duplicate_movies(src):
     """Returns a list of duplicate movies from a src list"""
     movies = read_movies(src)
+    formatted_movies = []
+    
+    for item in movies:
+        formatted_movies.append(item.split('\t')[1])
+
+    seen = {}
     duplicates = []
-    while movies:
-        movie = movies.pop()
-        if is_duplicate(movie, movies):
+
+    for movie in formatted_movies:
+        if movie in seen:
+            seen[movie] += 1
             duplicates.append(movie)
-    return duplicates
+        else:
+            seen[movie] = 1
+    
+    print(f"Found {len(duplicates)} duplicate movies:")
+    
+    # starter code
+    # while movies:
+    #     movie = movies.pop()
+    #     if is_duplicate(movie, movies):
+    #         duplicates.append(movie)
+    # return duplicates
 
-
+@profile
 def timeit_helper():
     """Part A:  Obtain some profiling measurements using timeit(),
     and computes a list of duplicate movie entries"""
 
     setup = 'from __main__ import find_duplicate_movies'
-    repeat_num, run_num = 5, 3
+    repeat_num, run_num = 7, 5
 
     t = timeit.Timer("find_duplicate_movies('movies.txt')", setup)
     result = t.repeat(repeat= repeat_num, number=run_num)
@@ -61,12 +83,13 @@ def timeit_helper():
 
 def main():
     """Computes a list of duplicate movie entries"""
-    result = find_duplicate_movies('movies.txt')
-    print('Found {} duplicate movies:'.format(len(result)))
-    print('\n'.join(result))
+    timeit_helper()
+
+
+    # result = find_duplicate_movies('movies.txt')
+    # print('Found {} duplicate movies:'.format(len(result)))
 
 
     
 if __name__ == '__main__':
-    timeit_helper()
     main()
